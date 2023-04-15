@@ -1,33 +1,71 @@
 package jinny.springboot.security.jwt.service.impl;
 
-import jinny.springboot.security.jwt.common.AccountRole;
+import jinny.springboot.security.jwt.common.AccountRoleType;
 import jinny.springboot.security.jwt.common.AccountStatus;
-import jinny.springboot.security.jwt.dao.SignDao;
+import jinny.springboot.security.jwt.config.Security.JwtTokenProvider;
+import jinny.springboot.security.jwt.data.dto.SignInResult;
 import jinny.springboot.security.jwt.data.dto.SignUpAccountReq;
 import jinny.springboot.security.jwt.data.dto.SignUpAccountResult;
 import jinny.springboot.security.jwt.data.entity.Account;
+import jinny.springboot.security.jwt.data.entity.AccountRole;
+import jinny.springboot.security.jwt.data.repository.AccountRepository;
 import jinny.springboot.security.jwt.service.SignService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.List;
 
 @RequiredArgsConstructor
 @Service
 public class SignServiceImpl implements SignService {
-
-	private final SignDao signDao;
+	private final AccountRepository accountRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final JwtTokenProvider jwtTokenProvider;
 	@Override
 	public SignUpAccountResult signup(SignUpAccountReq param) {
-		Account account = Account.builder()
+		Account account;
+		account = Account.builder()
 				.uid(param.getUid())
 				.name(param.getName())
-				.password(param.getPassword())
+				.password(passwordEncoder.encode(param.getPassword()))
 				.email(param.getEmail())
-				.roles(Collections.singletonList(AccountRole.getByRole(param.getRole()).getRoleType()))
+				.roles(Collections.singletonList(AccountRole.builder().role(AccountRoleType.getByRole(param.getRole()).getRoleType()).build()))
 				.status(AccountStatus.ACTIVE.toString())
 				.build();
 
-		return signDao.create(account);
+		List<AccountRole> accountRoles = Collections.singletonList(AccountRole.builder()
+				.role(AccountRoleType.getByRole(param.getRole()).getRoleType())
+				.account(account)
+				.build());
+		account.setRoles(accountRoles);
+
+		Account savedAccount = accountRepository.save(account);
+		return SignUpAccountResult.of(savedAccount);
+	}
+
+	@Override
+	public SignInResult signIn(String id, String password) {
+		try {
+			// 유저 정보 확인
+			Account account = accountRepository.findByUid(id);
+			if (account == null) {
+				throw new RuntimeException("UserNotFoundException: " + id);
+			}
+
+			// 유저의 password와 parameter의 password가 동일한지 확인
+			boolean matches = passwordEncoder.matches(password, account.getPassword());
+			if (!matches) {
+				throw new RuntimeException("PasswordFailException");
+			}
+
+			// 토큰 생성
+			String token = jwtTokenProvider.createTokne(id, account.getRoles());
+			return SignInResult.of(token);
+		} catch (Exception e) {
+			throw new RuntimeException("Sign-in Failed. \n" + e.getMessage());
+		}
+
 	}
 }
