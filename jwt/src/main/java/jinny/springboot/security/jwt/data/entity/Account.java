@@ -2,6 +2,7 @@ package jinny.springboot.security.jwt.data.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jinny.springboot.security.jwt.common.AccountRoleType;
+import jinny.springboot.security.jwt.common.AccountStatus;
 import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -43,4 +44,7 @@ public class Account {
 		return roles.stream().map(AccountRole::getRole).collect(Collectors.toList());
 	}
 
+	public void changeStatus(AccountStatus status) {
+		this.status = status.toString();
+	}
 }
