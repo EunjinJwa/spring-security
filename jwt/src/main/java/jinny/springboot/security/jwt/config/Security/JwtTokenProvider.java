@@ -1,12 +1,18 @@
 package jinny.springboot.security.jwt.config.Security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jws;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import javax.servlet.http.HttpServletRequest;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Date;
@@ -15,6 +21,7 @@ import java.util.List;
 @RequiredArgsConstructor
 @Component
 public class JwtTokenProvider {
+	private final UserDetailsService userDetailsService;
 
 	private String secretKey = "kassy@secret#key";
 	private final long tokenValidMillisecond = 60 * 60 * 1000;
@@ -24,7 +31,7 @@ public class JwtTokenProvider {
 		secretKey = Base64.getEncoder().encodeToString(secretKey.getBytes(StandardCharsets.UTF_8));
 	}
 
-	public String createTokne(String uid, List<String> roles) {
+	public String createToken(String uid, List<String> roles) {
 		Claims claims = Jwts.claims().setSubject(uid);
 		claims.put("roles", roles);
 		Date now = new Date();
@@ -38,6 +45,29 @@ public class JwtTokenProvider {
 		return token;
 	}
 
+	public String resolveToken(HttpServletRequest httpServletRequest) {
+		return httpServletRequest.getHeader("Authorization");
+	}
 
+	public boolean validateToken(String token) {
+		// 토큰 기간 체크
+		Jws<Claims> claimsJws = Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+		return !claimsJws.getBody().getExpiration().before(new Date());
+	}
+
+
+	public Authentication getAuthentication(String token) {
+		String uid = getUserId(token);
+		UserDetails userDetails = userDetailsService.loadUserByUsername(uid);
+		return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
+	}
+
+	public String getUserId(String token) {
+		return parseTokenClaims(token).getBody().getSubject();
+	}
+
+	private Jws<Claims> parseTokenClaims(String token) {
+		return Jwts.parser().setSigningKey(secretKey).parseClaimsJws(token);
+	}
 
 }
