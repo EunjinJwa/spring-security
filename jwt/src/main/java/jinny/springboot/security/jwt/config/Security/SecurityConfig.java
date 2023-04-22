@@ -6,7 +6,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @RequiredArgsConstructor
@@ -14,6 +14,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
 	private final JwtTokenProvider jwtTokenProvider;
+	private final UserDetailsService userDetailsService;
 
 	@Override
 	public void configure(WebSecurity web) throws Exception {
@@ -30,8 +31,9 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
 				.antMatchers("/api/sign/**").permitAll()
 				.antMatchers("/api/hello").permitAll()
 				.antMatchers("**error**").permitAll()
-				.anyRequest().hasRole("ADMIN")
+				.antMatchers("/api/admin/**").hasRole("ADMIN")
+				.anyRequest().hasAnyRole("ADMIN","USER")
 				.and()
-				.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider), UsernamePasswordAuthenticationFilter.class);
+				.addFilterBefore(new JwtAuthenticationFilter(jwtTokenProvider, userDetailsService), UsernamePasswordAuthenticationFilter.class);
 	}
 }

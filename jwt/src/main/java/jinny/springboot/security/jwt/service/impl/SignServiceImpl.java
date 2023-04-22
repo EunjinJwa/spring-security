@@ -64,7 +64,7 @@ public class SignServiceImpl implements SignService {
 			String token = jwtTokenProvider.createToken(id, account.getRoles());
 			return SignInResult.of(token);
 		} catch (Exception e) {
-			throw new RuntimeException("Sign-in Failed. \n" + e.getMessage());
+			throw new RuntimeException("Sign-in Failed. " + e.getMessage());
 		}
 
 	}

@@ -21,7 +21,6 @@ import java.util.List;
 @RequiredArgsConstructor
 @Component
 public class JwtTokenProvider {
-	private final UserDetailsService userDetailsService;
 
 	private String secretKey = "kassy@secret#key";
 	private final long tokenValidMillisecond = 60 * 60 * 1000;
@@ -46,7 +45,11 @@ public class JwtTokenProvider {
 	}
 
 	public String resolveToken(HttpServletRequest httpServletRequest) {
-		return httpServletRequest.getHeader("Authorization");
+		String authorization = httpServletRequest.getHeader("Authorization");
+		if (authorization != null && authorization.startsWith("Bearer")) {
+			return authorization.substring(7);
+		}
+		return null;
 	}
 
 	public boolean validateToken(String token) {
@@ -56,14 +59,9 @@ public class JwtTokenProvider {
 	}
 
 
-	public Authentication getAuthentication(String token) {
-		String uid = getUserId(token);
-		UserDetails userDetails = userDetailsService.loadUserByUsername(uid);
-		return new UsernamePasswordAuthenticationToken(userDetails, "", userDetails.getAuthorities());
-	}
-
-	public String getUserId(String token) {
+	public String getUserIdByToken(String token) {
 		return parseTokenClaims(token).getBody().getSubject();
+
 	}
 
 	private Jws<Claims> parseTokenClaims(String token) {
