@@ -3,6 +3,7 @@ package jinny.springboot.security.jwt.service.impl;
 import jinny.springboot.security.jwt.common.AccountStatus;
 import jinny.springboot.security.jwt.data.entity.Account;
 import jinny.springboot.security.jwt.data.repository.AccountRepository;
+import jinny.springboot.security.jwt.handler.exception.CustomErrorException;
 import jinny.springboot.security.jwt.service.AccountService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -24,10 +24,6 @@ public class AccountController {
 
 	@GetMapping(path = "/{uid}")
 	public Account getAccount(@PathVariable String uid, HttpServletRequest request) {
-		Gson gson = new Gson();
-		logger.info("getAuthType : {}", request.getAuthType());
-		logger.info("Authorization : {}", request.getHeader("Authorization"));
-		logger.info("getContext().getAuthentication : {}", SecurityContextHolder.getContext().getAuthentication());
 		return accountService.getAccount(uid);
 	}
 
